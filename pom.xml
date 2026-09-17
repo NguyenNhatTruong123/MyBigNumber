@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.add2num</groupId>
+    <artifactId>add2num-parent</artifactId>
+    <version>0.0.1</version>
+    <packaging>pom</packaging>
+
+    <name>Add2Num - Parent</name>
+    <description>
+        Parent project: adds two very large natural numbers (represented as strings) using the
+        grade-school "carry" addition algorithm.
+        - MyBigNumber     : core library (Task 1), contains the MyBigNumber class.
+        - MyBigNumber-MVC : Web application built with Spring Boot + Thymeleaf + Bootstrap (Task 2),
+                            reuses MyBigNumber.
+    </description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
+    <modules>
+        <module>MyBigNumber</module>
+        <module>MyBigNumber-MVC</module>
+    </modules>
+</project>
