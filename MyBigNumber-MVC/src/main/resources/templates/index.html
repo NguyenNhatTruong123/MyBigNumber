@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Number Addition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between font-sans">
+
+<!-- TOP BAR: Tiêu đề & Chọn ngôn ngữ -->
+<header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center border-b">
+    <h1 class="text-xl font-bold text-blue-600 data-i18n" data-vi="Ứng dụng cộng 2 số lớn" data-en="Big Number Addition App" data-ko="대수 덧셈 애플리케이션">Ứng dụng cộng 2 số lớn</h1>
+
+    <div class="flex items-center gap-2">
+        <label class="text-sm font-medium text-gray-600 data-i18n" data-vi="Ngôn ngữ:" data-en="Language:" data-ko="언어:">Ngôn ngữ:</label>
+        <select id="langSelector" onchange="changeLanguage(this.value)" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500 font-semibold cursor-pointer">
+            <option value="vi">Tiếng Việt 🇻🇳</option>
+            <option value="en">English 🇬🇧</option>
+            <option value="ko">한국어 🇰🇷</option>
+        </select>
+    </div>
+</header>
+
+<!-- MAIN BODY: Chia 2 cột linh hoạt -->
+<main class="max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start flex-grow">
+
+    <!-- CỘT BÊN TRÁI: Form nhập liệu & Kết quả cuối cùng -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border space-y-6">
+        <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 data-i18n" data-vi="Phép toán hiện tại" data-en="Current Operation" data-ko="현재 연산">Phép toán hiện tại</h2>
+
+        <form th:action="@{/sum}" th:object="${bigNumberForm}" method="post" class="space-y-4">
+
+            <!-- Số thứ nhất -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-sm font-semibold text-gray-600 data-i18n" data-vi="Số thứ nhất:" data-en="First Number:" data-ko="첫 번째 숫자:">Số thứ nhất:</label>
+                    <button type="button" onclick="generateRandom('number1')" class="text-xs text-blue-600 hover:underline font-medium data-i18n" data-vi="[Ngẫu nhiên]" data-en="[Random]" data-ko="[무작위]">[Ngẫu nhiên]</button>
+                </div>
+                <input type="text" th:field="*{number1}" id="number1"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                       class="w-full p-3 border border-gray-300 rounded-lg text-lg tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       placeholder="Nhập chuỗi số tự nhiên..." required />
+            </div>
+
+            <!-- Số thứ hai -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-sm font-semibold text-gray-600 data-i18n" data-vi="Số thứ hai:" data-en="Second Number:" data-ko="두 번째 숫자:">Số thứ hai:</label>
+                    <button type="button" onclick="generateRandom('number2')" class="text-xs text-blue-600 hover:underline font-medium data-i18n" data-vi="[Ngẫu nhiên]" data-en="[Random]" data-ko="[무작위]">[Ngẫu nhiên]</button>
+                </div>
+                <input type="text" th:field="*{number2}" id="number2"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                       class="w-full p-3 border border-gray-300 rounded-lg text-lg tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       placeholder="Nhập chuỗi số tự nhiên..." required />
+            </div>
+
+            <!-- Nút bấm hành động -->
+            <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition data-i18n" data-vi="Thực hiện phép cộng" data-en="Execute Addition" data-ko="덧셈 실행">Thực hiện phép cộng</button>
+                <button type="button" onclick="generateRandomBoth()" class="bg-gray-100 hover:bg-gray-200 border text-gray-700 font-medium px-4 rounded-lg transition data-i18n" data-vi="Random cả hai" data-en="Random Both" data-ko="모두 무작위">Random cả hai</button>
+            </div>
+        </form>
+
+        <!-- Khối hiển thị Kết quả cuối cùng -->
+        <div th:if="${result}" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <span class="block text-xs font-bold text-green-700 uppercase tracking-wider data-i18n" data-vi="Kết quả tổng:" data-en="Total Result:" data-ko="총 결과:">Kết quả tổng:</span>
+            <p class="text-2xl font-mono font-bold text-green-900 break-all mt-1" th:text="${result}">0</p>
+        </div>
+    </section>
+
+    <!-- CỘT BÊN PHẢI ĐỂ NGANG HÀNG (FLEX/GRID), CÓ SCROLLABLE ĐỂ XEM TIẾN TRÌNH -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border flex flex-col h-full lg:max-h-[520px]">
+        <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 data-i18n" data-vi="Tiến trình thực hiện chi tiết" data-en="Detailed Execution Progress" data-ko="상세 실행 프로세스">Tiến trình thực hiện chi tiết</h2>
+
+        <div class="overflow-y-auto flex-grow space-y-3 pr-2 scrollbar-thin" style="max-height: 420px;">
+
+            <!-- Khi chưa thực hiện phép tính -->
+            <div th:if="${steps == null}" class="text-center py-12 text-gray-400 italic text-sm data-i18n" data-vi="Vui lòng bấm nút cộng để xem tiến trình từng bước." data-en="Please press the addition button to view step-by-step progress." data-ko="단계별 진행 상황을 보려면 더하기 버튼을 누르십시오.">
+                Vui lòng bấm nút cộng để xem tiến trình từng bước.
+            </div>
+
+            <!-- Khối danh sách các bước lặp từ backend (Thymeleaf) -->
+            <div th:if="${steps}" th:each="step, iterStat : ${steps}" class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs space-y-1 hover:bg-blue-50 transition">
+                <div class="flex justify-between font-bold text-blue-600 border-b pb-1 mb-1">
+                    <span class="data-i18n" data-vi="Bước " data-en="Step " data-ko="단계 ">Bước </span><span th:text="${iterStat.count}">1</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-600">
+                    <div><span class="data-i18n" data-vi="Kí số 1:" data-en="Digit 1:" data-ko="숫자 1:">Kí số 1:</span> <strong th:text="${step.digit1}">-</strong></div>
+                    <div><span class="data-i18n" data-vi="Kí số 2:" data-en="Digit 2:" data-ko="숫자 2:">Kí số 2:</span> <strong th:text="${step.digit2}">-</strong></div>
+                    <div><span class="data-i18n" data-vi="Nhớ vào:" data-en="Carry In:" data-ko="올림수 받아오기:">Nhớ vào:</span> <span th:text="${step.carryIn}">0</span></div>
+                    <div><span class="data-i18n" data-vi="Tổng cột:" data-en="Column Sum:" data-ko="열 합계:">Tổng cột:</span> <span th:text="${step.carryOut * 10 + step.resultDigit}">0</span></div>
+                    <div class="col-span-2 text-indigo-700 font-semibold mt-1">
+                        ➔ <span class="data-i18n" data-vi="Ghi lại:" data-en="Write:" data-ko="기록:">Ghi lại:</span> <span th:text="${step.resultDigit}">0</span>,
+                        <span class="data-i18n" data-vi="Nhớ ra:" data-en="Carry Out:" data-ko="새 올림수:">Nhớ ra:</span> <span th:text="${step.carryOut}">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- PHẦN LỊCH SỬ PHÍA DƯỚI -->
+<footer class="max-w-7xl w-full mx-auto p-4 lg:p-6 bg-white border-t mt-4 rounded-t-xl shadow-inner">
+    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 data-i18n" data-vi="Lịch sử phép toán đã lưu" data-en="Saved Operation History" data-ko="저장된 연산 기록">Lịch sử phép toán đã lưu</h3>
+    <div class="overflow-x-auto max-h-48 overflow-y-auto">
+        <table class="w-full text-left border-collapse text-xs">
+            <thead>
+            <tr class="bg-gray-100 text-gray-600 uppercase font-semibold border-b">
+                <th class="p-2 data-i18n" data-vi="Số thứ nhất" data-en="First Number" data-ko="첫 번째 숫자">Số thứ nhất</th>
+                <th class="p-2 data-i18n" data-vi="Số thứ hai" data-en="Second Number" data-ko="두 번째 숫자">Số thứ hai</th>
+                <th class="p-2 data-i18n" data-vi="Kết quả" data-en="Result" data-ko="결과">Kết quả</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y font-mono">
+            <tr th:each="hist : ${history}" class="hover:bg-gray-50">
+                <td class="p-2 break-all text-gray-700" th:text="${hist.number1}">-</td>
+                <td class="p-2 break-all text-gray-700" th:text="${hist.number2}">-</td>
+                <td class="p-2 break-all font-bold text-green-700" th:text="${hist.result}">-</td>
+            </tr>
+            <tr th:if="${history == null or #lists.isEmpty(history)}">
+                <td colspan="3" class="p-4 text-center text-gray-400 italic data-i18n" data-vi="Chưa có lịch sử tính toán nào." data-en="No history found." data-ko="기록이 없습니다.">Chưa có lịch sử tính toán nào.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</footer>
+
+<script>
+    function getRandomBigNumberStr() {
+        const length = Math.floor(Math.random() * 25) + 10;
+        let result = '';
+        result += Math.floor(Math.random() * 9) + 1;
+        for (let i = 1; i < length; i++) {
+            result += Math.floor(Math.random() * 10);
+        }
+        return result;
+    }
+
+    function generateRandom(inputId) {
+        document.getElementById(inputId).value = getRandomBigNumberStr();
+    }
+
+    function generateRandomBoth() {
+        generateRandom('number1');
+        generateRandom('number2');
+    }
+
+    function changeLanguage(lang) {
+        localStorage.setItem('preferred_lang', lang);
+        document.getElementById('langSelector').value = lang;
+
+        const elements = document.querySelectorAll('.data-i18n');
+        elements.forEach(el => {
+            const translation = el.getAttribute(`data-${lang}`);
+            if (translation) {
+                if (el.childNodes.length > 1 && el.firstChild.nodeType === Node.TEXT_NODE) {
+                    el.firstChild.textContent = translation;
+                } else {
+                    el.textContent = translation;
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedLang = localStorage.getItem('preferred_lang') || 'vi';
+        changeLanguage(savedLang);
+    });
+</script>
+</body>
+</html>
