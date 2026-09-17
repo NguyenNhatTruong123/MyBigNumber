@@ -57,6 +57,10 @@ On the page:
 - At the bottom is the **history of additions performed** in the current run (keeps the last 50
   records, stored in memory).
 
+The main application's UI:
+
+![Project Screenshot](./image/img.png)
+
 ## Running the Web module's tests
 
 ```bash
