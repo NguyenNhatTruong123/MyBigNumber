@@ -41,16 +41,23 @@ public class MyBigNumber {
         int j = stn2.length() - 1; // pointer walking stn2 from right to left
         int carry = 0;
         int stepNo = 1;
+        Character c1 = null;
+        Character c2 = null;
+        int d1 = 0;
+        int d2 = 0;
+        int columnSum = 0;
+        int resultDigit = 0;
+        int carryOut = 0;
 
         while (i >= 0 || j >= 0 || carry > 0) {
-            Character c1 = i >= 0 ? stn1.charAt(i) : null;
-            Character c2 = j >= 0 ? stn2.charAt(j) : null;
-            int d1 = c1 != null ? (c1 - '0') : 0;
-            int d2 = c2 != null ? (c2 - '0') : 0;
+            c1 = i >= 0 ? stn1.charAt(i) : null;
+            c2 = j >= 0 ? stn2.charAt(j) : null;
+            d1 = c1 != null ? (c1 - '0') : 0;
+            d2 = c2 != null ? (c2 - '0') : 0;
 
-            int columnSum = d1 + d2 + carry;
-            int resultDigit = columnSum % 10;
-            int carryOut = columnSum / 10;
+            columnSum = d1 + d2 + carry;
+            resultDigit = columnSum % 10;
+            carryOut = columnSum / 10;
 
             result.insert(0, resultDigit);
 
