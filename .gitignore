@@ -1,1 +1,39 @@
+# Build output
 /target/
+/build/
+out/
+/bin/
+
+# Java / Maven / Gradle
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# Eclipse project metadata
+.classpath
+.project
+.settings/
+*.prefs
+.metadata/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment / temp files
+.env
+.env.*
+*.tmp
+
