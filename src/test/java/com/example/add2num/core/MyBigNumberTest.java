@@ -8,8 +8,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigInteger;
 import java.util.Random;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -152,5 +154,80 @@ class MyBigNumberTest {
 
         assertEquals("5", bigNumber.sum("2", "3"));
         assertEquals(1, bigNumber.getLastSteps().size());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "12340, 1, 12341, 2",
+            "1, 12340, 12341, 2",
+            "12349, 1, 12350, 3",
+            "1, 12349, 12350, 3",
+            "12999, 1, 13000, 5",
+            "1, 12999, 13000, 5",
+            "999, 1, 1000, 4",
+            "0000, 0, 0, 2"
+    })
+    void testCompactTraceStopsArithmeticWhenCarryEnds(String a, String b, String expected, int steps) {
+        assertEquals(expected, bigNumber.sum(a, b));
+        assertEquals(steps, bigNumber.describeLastSteps().size());
+    }
+
+    @Test
+    void testLongPrefixIsDescribedOnceAndLegacyColumnsRemainAvailable() {
+        String number = "1".repeat(10_000);
+        assertEquals("1".repeat(9_999) + "2", bigNumber.sum(number, "1"));
+        assertEquals(2, bigNumber.describeLastSteps().size());
+        assertTrue(bigNumber.describeLastSteps().get(1).contains("bring down remaining prefix"));
+        assertEquals(10_000, bigNumber.getLastSteps().size());
+        assertEquals(10_000, bigNumber.getLastSteps().get(9_999).getStepNumber());
+        assertEquals("1", bigNumber.getLastSteps().get(9_999).getDigit1());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testCopiedColumnsPreserveLegacyStepFields(boolean firstOperand) {
+        assertEquals("12350", firstOperand ? bigNumber.sum("12349", "1") : bigNumber.sum("1", "12349"));
+        List<MyBigNumber.AdditionStep> steps = bigNumber.getLastSteps();
+        MyBigNumber.AdditionStep step;
+        int index;
+        int expectedDigit;
+        for (index = 2; index < 5; index++) {
+            step = steps.get(index);
+            expectedDigit = 5 - index;
+            assertEquals(index + 1, step.getStepNumber());
+            assertEquals(firstOperand ? String.valueOf(expectedDigit) : "-", step.getDigit1());
+            assertEquals(firstOperand ? "-" : String.valueOf(expectedDigit), step.getDigit2());
+            assertEquals(0, step.getCarryIn());
+            assertEquals(expectedDigit, step.getColumnSum());
+            assertEquals(expectedDigit, step.getResultDigit());
+            assertEquals(0, step.getCarryOut());
+        }
+        assertTrue(bigNumber.describeLastSteps().get(2).contains("\"123\""));
+    }
+
+    @Test
+    void testLegacyListRemainsReadOnlyAndFollowsLatestCall() {
+        bigNumber.sum("12340", "1");
+        List<MyBigNumber.AdditionStep> steps = bigNumber.getLastSteps();
+        assertThrows(UnsupportedOperationException.class, steps::clear);
+        assertThrows(IndexOutOfBoundsException.class, () -> steps.get(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> steps.get(5));
+        bigNumber.sum("1", "2");
+        assertEquals(1, steps.size());
+        assertEquals(3, steps.get(0).getResultDigit());
+        assertThrows(IllegalArgumentException.class, () -> bigNumber.sum("x234", "1"));
+        assertTrue(steps.isEmpty());
+        assertTrue(bigNumber.describeLastSteps().isEmpty());
+    }
+
+    @Test
+    void testRepeatedLegacyReadsReuseCopiedSteps() {
+        bigNumber.sum("12340", "1");
+        List<MyBigNumber.AdditionStep> firstView = bigNumber.getLastSteps();
+        List<MyBigNumber.AdditionStep> secondView = bigNumber.getLastSteps();
+        assertSame(firstView.get(4), secondView.get(4));
+        assertEquals(firstView, secondView);
+        assertEquals(firstView.hashCode(), secondView.hashCode());
+        assertEquals(2, bigNumber.describeLastSteps().size());
     }
 }

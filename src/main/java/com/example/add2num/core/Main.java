@@ -1,6 +1,7 @@
 package com.example.add2num.core;
 
 import java.util.Scanner;
+import java.util.List;
 
 /**
  * Entry point to run the two-large-numbers addition program STANDALONE,
@@ -41,8 +42,10 @@ public class Main {
 
         System.out.println();
         System.out.println("Calculation progress (see the log lines above as well, via SLF4J):");
-        for (MyBigNumber.AdditionStep step : myBigNumber.getLastSteps()) {
-            System.out.println("  " + step.describe());
+        List<String> descriptions = myBigNumber.describeLastSteps();
+        int index;
+        for (index = 0; index < descriptions.size(); index++) {
+            System.out.println("  " + descriptions.get(index));
         }
 
         System.out.println();
