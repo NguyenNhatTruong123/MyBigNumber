@@ -40,7 +40,10 @@
                 <input type="text" th:field="*{number1}" id="number1"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                        class="w-full p-3 border border-gray-300 rounded-lg text-lg tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                       placeholder="Nhập chuỗi số tự nhiên..." required />
+                       placeholder="Nhập chuỗi số tự nhiên..." data-i18n-placeholder
+                       data-vi-placeholder="Nhập chuỗi số tự nhiên..."
+                       data-en-placeholder="Enter a natural-number string..."
+                       data-ko-placeholder="자연수 문자열을 입력하세요..." required />
             </div>
 
             <!-- Số thứ hai -->
@@ -52,7 +55,10 @@
                 <input type="text" th:field="*{number2}" id="number2"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                        class="w-full p-3 border border-gray-300 rounded-lg text-lg tracking-wider font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                       placeholder="Nhập chuỗi số tự nhiên..." required />
+                       placeholder="Nhập chuỗi số tự nhiên..." data-i18n-placeholder
+                       data-vi-placeholder="Nhập chuỗi số tự nhiên..."
+                       data-en-placeholder="Enter a natural-number string..."
+                       data-ko-placeholder="자연수 문자열을 입력하세요..." required />
             </div>
 
             <!-- Nút bấm hành động -->
@@ -81,7 +87,7 @@
             </div>
 
             <!-- Khối danh sách các bước lặp từ backend (Thymeleaf) -->
-            <div th:if="${steps}" th:each="step, iterStat : ${steps}" class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs space-y-1 hover:bg-blue-50 transition">
+            <div th:if="${steps}" th:each="step, iterStat : ${steps}" data-step-type="addition" class="p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs space-y-1 hover:bg-blue-50 transition">
                 <div class="flex justify-between font-bold text-blue-600 border-b pb-1 mb-1">
                     <span class="data-i18n" data-vi="Bước " data-en="Step " data-ko="단계 ">Bước </span><span th:text="${iterStat.count}">1</span>
                 </div>
@@ -95,6 +101,15 @@
                         <span class="data-i18n" data-vi="Nhớ ra:" data-en="Carry Out:" data-ko="새 올림수:">Nhớ ra:</span> <span th:text="${step.carryOut}">0</span>
                     </div>
                 </div>
+            </div>
+            <div th:if="${copiedPrefix != null}" data-step-type="copy" class="p-3 bg-blue-50 border border-blue-200 rounded-lg font-mono text-xs space-y-2">
+                <div class="flex justify-between font-bold text-blue-600 border-b pb-1">
+                    <span class="data-i18n" data-vi="Bước " data-en="Step " data-ko="단계 ">Bước </span><span th:text="${#lists.size(steps) + 1}">2</span>
+                </div>
+                <p class="data-i18n" data-vi="Đã hết nhớ, hạ toàn bộ phần còn lại:" data-en="No carry remains. Bring down the remaining prefix:" data-ko="올림수가 없으므로 남은 앞부분을 그대로 내립니다:">Đã hết nhớ, hạ toàn bộ phần còn lại:</p>
+                <p class="font-bold text-indigo-700 break-all" th:text="${copiedPrefix}">123</p>
+                <p th:if="${copiedFromFirst}" class="text-gray-600 data-i18n" data-vi="Từ số thứ nhất" data-en="From the first number" data-ko="첫 번째 숫자에서">Từ số thứ nhất</p>
+                <p th:unless="${copiedFromFirst}" class="text-gray-600 data-i18n" data-vi="Từ số thứ hai" data-en="From the second number" data-ko="두 번째 숫자에서">Từ số thứ hai</p>
             </div>
         </div>
     </section>
@@ -159,6 +174,14 @@
                 } else {
                     el.textContent = translation;
                 }
+            }
+        });
+
+        const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholderElements.forEach(el => {
+            const placeholder = el.getAttribute(`data-${lang}-placeholder`);
+            if (placeholder) {
+                el.placeholder = placeholder;
             }
         });
     }

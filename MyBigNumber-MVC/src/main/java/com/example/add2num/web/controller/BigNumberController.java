@@ -14,14 +14,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Controller
 public class BigNumberController {
 
     private static final Logger log = LoggerFactory.getLogger(BigNumberController.class);
 
     private final HistoryService historyService;
-    // Reuses the Task 1 core module as a library (dependency), no modification needed.
-    private final MyBigNumber myBigNumber = new MyBigNumber();
 
     public BigNumberController(HistoryService historyService) {
         this.historyService = historyService;
@@ -49,10 +50,28 @@ public class BigNumberController {
         }
 
         log.info("Received addition request from the Web UI: {} + {}", form.getNumber1(), form.getNumber2());
+        // Core stores the last calculation's trace, so each request needs its own instance.
+        MyBigNumber myBigNumber = new MyBigNumber();
         String result = myBigNumber.sum(form.getNumber1(), form.getNumber2());
 
         model.addAttribute("result", result);
-        model.addAttribute("steps", myBigNumber.getLastSteps());
+        List<MyBigNumber.AdditionStep> columns = myBigNumber.getLastSteps();
+        List<MyBigNumber.AdditionStep> steps = new ArrayList<>();
+        int commonLength = Math.min(form.getNumber1().length(), form.getNumber2().length());
+        int index = 0;
+        // Keep actual additions and carry propagation; do not expand the lazy copied columns.
+        while (index < columns.size()
+                && (index < commonLength || columns.get(index - 1).getCarryOut() > 0)) {
+            steps.add(columns.get(index));
+            index++;
+        }
+        model.addAttribute("steps", steps);
+        boolean fromFirst = form.getNumber1().length() > form.getNumber2().length();
+        String longerOperand = fromFirst ? form.getNumber1() : form.getNumber2();
+        if (index < longerOperand.length()) {
+            model.addAttribute("copiedPrefix", longerOperand.substring(0, longerOperand.length() - index));
+            model.addAttribute("copiedFromFirst", fromFirst);
+        }
 
         historyService.add(new OperationRecord(form.getNumber1(), form.getNumber2(), result));
         model.addAttribute("history", historyService.getAll());

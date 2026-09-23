@@ -15,6 +15,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -121,5 +126,44 @@ public class BigNumberControllerTest {
 
         // Chặn hoàn toàn, không cho lưu historyService.add khi dính lỗi nhập liệu
         verify(historyService, never()).add(any(OperationRecord.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "12340, 1, 12341, 1, 1234, true",
+            "1, 12340, 12341, 1, 1234, false",
+            "12349, 1, 12350, 2, 123, true",
+            "1, 12349, 12350, 2, 123, false",
+            "12999, 1, 13000, 4, 1, true",
+            "0000, 0, 0, 1, 000, true",
+            "205648412514, 29945188522247817919999278366032, 29945188522247817920204926778546, 14, 299451885222478179, false"
+    })
+    void testCompactProgress(String a, String b, String result, int additions,
+                             String prefix, boolean fromFirst) throws Exception {
+        mockMvc.perform(post("/sum").param("number1", a).param("number2", b))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("result", result))
+                .andExpect(model().attribute("steps", hasSize(additions)))
+                .andExpect(model().attribute("copiedPrefix", prefix))
+                .andExpect(model().attribute("copiedFromFirst", fromFirst))
+                .andExpect(response -> {
+                    String html = response.getResponse().getContentAsString();
+                    assertEquals(additions, html.split("data-step-type=\"addition\"", -1).length - 1);
+                    assertEquals(1, html.split("data-step-type=\"copy\"", -1).length - 1);
+                    String copyBlock = html.substring(html.indexOf("data-step-type=\"copy\""));
+                    copyBlock = copyBlock.substring(0, copyBlock.indexOf("</p>", copyBlock.indexOf("break-all")) + 4);
+                    assertTrue(copyBlock.contains(">" + prefix + "</p>"));
+                    assertTrue(copyBlock.contains("<span>" + (additions + 1) + "</span>"));
+                });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"999, 1, 4", "12, 34, 2", "0, 0, 1"})
+    void testNoCopyStepWhenAllColumnsWereAdded(String a, String b, int additions) throws Exception {
+        mockMvc.perform(post("/sum").param("number1", a).param("number2", b))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("steps", hasSize(additions)))
+                .andExpect(model().attributeDoesNotExist("copiedPrefix", "copiedFromFirst"))
+                .andExpect(content().string(not(containsString("data-step-type=\"copy\""))));
     }
 }
