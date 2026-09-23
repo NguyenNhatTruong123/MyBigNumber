@@ -15,8 +15,8 @@ import java.util.List;
  * convert it to a digit, add the digits together with the carry, and store the
  * units digit of that column's sum into the result.
  *
- * Assumption (per the requirement): the input parameters only contain valid
- * digits (0-9); this class does not need to validate/handle bad input data.
+ * Inputs must be non-empty strings containing only ASCII digits (0-9).
+ * Each character is validated as its column is added, without a separate scan.
  */
 public class MyBigNumber {
 
@@ -31,12 +31,18 @@ public class MyBigNumber {
      * @param stn1 the first operand
      * @param stn2 the second operand
      * @return the sum of stn1 and stn2, as a digit string
+     * @throws IllegalArgumentException if either operand is null, empty, or contains a non-digit
      */
     public String sum(String stn1, String stn2) {
         lastSteps.clear();
+        if (stn1 == null || stn2 == null || stn1.isEmpty() || stn2.isEmpty()) {
+            throw new IllegalArgumentException("Both numbers must be non-null, non-empty digit strings (0-9).");
+        }
         log.info("Starting addition: \"{}\" + \"{}\"", stn1, stn2);
 
-        StringBuilder result = new StringBuilder();
+        // Reserve one extra column for the final carry and fill from right to left.
+        char[] result = new char[Math.max(stn1.length(), stn2.length()) + 1];
+        int resultStart = result.length;
         int i = stn1.length() - 1; // pointer walking stn1 from right to left
         int j = stn2.length() - 1; // pointer walking stn2 from right to left
         int carry = 0;
@@ -48,10 +54,16 @@ public class MyBigNumber {
         int columnSum = 0;
         int resultDigit = 0;
         int carryOut = 0;
+        AdditionStep step;
 
         while (i >= 0 || j >= 0 || carry > 0) {
             c1 = i >= 0 ? stn1.charAt(i) : null;
             c2 = j >= 0 ? stn2.charAt(j) : null;
+            if ((c1 != null && (c1 < '0' || c1 > '9'))
+                    || (c2 != null && (c2 < '0' || c2 > '9'))) {
+                lastSteps.clear();
+                throw new IllegalArgumentException("Both numbers must contain digits only (0-9).");
+            }
             d1 = c1 != null ? (c1 - '0') : 0;
             d2 = c2 != null ? (c2 - '0') : 0;
 
@@ -59,9 +71,9 @@ public class MyBigNumber {
             resultDigit = columnSum % 10;
             carryOut = columnSum / 10;
 
-            result.insert(0, resultDigit);
+            result[--resultStart] = (char) ('0' + resultDigit);
 
-            AdditionStep step = new AdditionStep(stepNo, c1, c2, carry, columnSum, resultDigit, carryOut);
+            step = new AdditionStep(stepNo, c1, c2, carry, columnSum, resultDigit, carryOut);
             lastSteps.add(step);
             log.info(step.describe());
 
@@ -71,21 +83,16 @@ public class MyBigNumber {
             stepNo++;
         }
 
-        String finalResult = stripLeadingZeros(result.toString());
+        // Skip redundant leading zeros in the buffer, keeping at least one digit.
+        while (resultStart < result.length - 1 && result[resultStart] == '0') {
+            resultStart++;
+        }
+        String finalResult = new String(result, resultStart, result.length - resultStart);
         log.info("Result: \"{}\" + \"{}\" = \"{}\"", stn1, stn2, finalResult);
         return finalResult;
     }
 
-    /** Strips redundant leading zeros from the result string (e.g. "007" -> "7"), keeping at least 1 digit. */
-    private String stripLeadingZeros(String s) {
-        int idx = 0;
-        while (idx < s.length() - 1 && s.charAt(idx) == '0') {
-            idx++;
-        }
-        return s.substring(idx);
-    }
-
-    /** Returns the list of steps (progress) of the most recent sum() call, used to render the Web UI. */
+    /** Returns the most recent sum() call's steps, or an empty list if its input was invalid. */
     public List<AdditionStep> getLastSteps() {
         return Collections.unmodifiableList(lastSteps);
     }
